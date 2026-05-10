@@ -1,9 +1,9 @@
 Service Boundary của nhóm AI Vision
 
 1. Thông tin nhóm
-   Tên nhóm: [Điền tên nhóm của bạn]
-   Lớp: [Điền lớp của bạn]
-   Thành viên: Kiên Đỗ
+   Tên nhóm: Nhóm 11
+   Lớp: CNTT17-13
+   Thành viên: Đỗ Trung Kiên , Lưu Thế Hưng
    Service nhóm phụ trách: AI Vision Analysis Service
    Sản phẩm tổng thể của lớp: Hệ thống giám sát và phân tích thông minh (Product B)
 2. Actor
@@ -30,10 +30,16 @@ Service Boundary của nhóm AI Vision
    Tọa độ khung hình $(x, y, w, h)$ cho mỗi đối tượng.
    Tỷ lệ tin cậy (Confidence Score) từ $0$ đến $1$.
 6. API dự kiến
-   ![alt text](image.png)
+   | Method | Endpoint | Mục đích |
+   | :--- | :--- | :--- |
+   | GET | `/health` | Kiểm tra trạng thái hoạt động của AI Service |
+   | POST | `/v1/vision/analyze` | Gửi ảnh và nhận kết quả phân tích AI |
+   | GET | `/v1/vision/models` | Lấy danh sách các phiên bản model AI đang hỗ trợ |
+
 7. Phụ thuộc service khác
    Gọi đến: Image Storage Service để lưu lại các ảnh đã được vẽ khung nhận diện (annotated images).
    Bị gọi bởi: API Gateway hoặc Core Business Service khi cần thông tin phân tích để ra quyết định.
+
 8. Sơ đồ minh họa
 
 ```mermaid
