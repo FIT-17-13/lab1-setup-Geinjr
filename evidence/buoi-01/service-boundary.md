@@ -6,10 +6,12 @@ Service Boundary của nhóm AI Vision
    Thành viên: Đỗ Trung Kiên , Lưu Thế Hưng
    Service nhóm phụ trách: AI Vision Analysis Service
    Sản phẩm tổng thể của lớp: Hệ thống giám sát và phân tích thông minh (Product B)
+
 2. Actor
    Hệ thống Camera/IoT: Tự động gửi luồng dữ liệu hình ảnh về để phân tích.
    Người dùng cuối (User): Tải ảnh trực tiếp lên để kiểm tra đối tượng.
    Hệ thống quản trị (Admin): Theo dõi hiệu suất của model AI và cấu hình các tham số nhận diện.
+
 3. System Boundary
    Phần nhóm kiểm soát:
    AI Model (YOLO/CNN): Bộ não chịu trách nhiệm nhận diện vật thể.
@@ -21,14 +23,21 @@ Service Boundary của nhóm AI Vision
 4. Service Boundary
    Trách nhiệm: Nhận dạng vật thể, phân loại nhãn (Labeling), xác định vị trí (Bounding Box) và trả về kết quả dưới dạng JSON.
    KHÔNG làm gì: Không chịu trách nhiệm hiển thị giao diện người dùng (UI), không xử lý việc lưu trữ lâu dài các file ảnh gốc.
+
 5. Input / Output
    Input
-   File hình ảnh (Binary/Base64) hoặc đường dẫn URL của ảnh.
-   ID của loại vật thể cần ưu tiên nhận diện.
+   {
+   "camera_id": "cam-gate-01",
+   "image_url": "http://example.com/frame.jpg",
+   "timestamp": "2026-05-02T09:10:00"
+   }
    Output
-   Danh sách đối tượng phát hiện được (Object List).
-   Tọa độ khung hình $(x, y, w, h)$ cho mỗi đối tượng.
-   Tỷ lệ tin cậy (Confidence Score) từ $0$ đến $1$.
+   {
+   "detected": true,
+   "object": "person",
+   "confidence": 0.91,
+   "risk_level": "medium"
+   }
 6. API dự kiến
    | Method | Endpoint | Mục đích |
    | :--- | :--- | :--- |
@@ -44,13 +53,38 @@ Service Boundary của nhóm AI Vision
 
 ```mermaid
 flowchart TD
-    User((User/Camera)) -->|Upload Image| Gateway[API Gateway]
-    subgraph AI_Vision_Service [Service của nhóm: AI Vision]
-        Gateway --> PreProcess[Pre-processing]
-        PreProcess --> Model[AI Model - Detection Engine]
-        Model --> PostProcess[Post-processing]
+    %% Định nghĩa các Actor (Vòng tròn)
+    CAM((Ref: Camera / IoT<br>Actor))
+    USR((Ref: User<br>Actor))
+    ADM((Ref: Admin<br>Actor))
+
+    %% Định nghĩa các bên tích hợp ngoài
+    GW[API Gateway<br>Caller Service]
+    AUTH[Auth Service<br>Token validation]
+    STORE[(Image Storage<br>S3 / MinIO)]
+
+    %% Ranh giới hệ thống của nhóm
+    subgraph BOUNDARY ["System Boundary · AI Vision Service"]
+        API["Vision API<br>• /v1/vision/analyze<br>• /health<br>• /v1/vision/models"]
+        PRE[Pre-processing<br>Resize · Normalize]
+        MODEL[AI Model<br>YOLO / CNN Detection]
+        POST[Post-processing<br>JSON Result Builder]
+
+        API -->|Input: image| PRE
+        PRE --> MODEL
+        MODEL --> POST
     end
-    PostProcess -->|Return JSON Results| User
-    PostProcess -->|Save Log| DB[(Result Database)]
-    Model -.->|Get Weights| Storage[Model Storage]
+
+    %% Luồng dữ liệu kích hoạt hệ thống
+    CAM -->|Input: image stream| API
+    USR -->|Input: upload image| API
+    ADM -->|Input: config / monitor| API
+
+    %% Luồng xác thực hỗ trợ
+    AUTH -.->|validate token| API
+
+    %% Luồng kết quả đầu ra
+    POST -->|Output: JSON detections| GW
+    POST -.->|Output: annotated image| STORE
+
 ```
